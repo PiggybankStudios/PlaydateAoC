@@ -24,9 +24,12 @@ struct DayInfo_t
 	u16 year;
 	u8 day;
 	u64 stateSize;
-	CalculateDayFunc_f* calculateFunc;
+	CalculateDayFunc_f* firstCalculateFunc;
+	CalculateDayFunc_f* secondCalculateFunc;
 	MyStr_t testInputPath;
 	MyStr_t realInputPath;
+	MyStr_t firstTestExpectedResult;
+	MyStr_t secondTestExpectedResult;
 };
 
 struct GameGlobals_t

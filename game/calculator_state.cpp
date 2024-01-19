@@ -40,6 +40,7 @@ void StartAppState_Calculator(bool initialize, AppState_t prevState, MyStr_t tra
 		
 		calc->fileChosen = false;
 		calc->useTestFile = true;
+		calc->doSecondPart = false;
 		
 		calc->initialized = true;
 		FreeScratchArena(scratch);
@@ -94,7 +95,7 @@ void UpdateAppState_Calculator()
 	}
 	
 	// +==============================+
-	// |  Handle Choosing Input File  |
+	// | Handle File and Part Choices |
 	// +==============================+
 	if (!calc->fileChosen)
 	{
@@ -104,11 +105,18 @@ void UpdateAppState_Calculator()
 			if (BtnPressed(Btn_Right)) { HandleBtnExtended(Btn_Right); }
 			calc->useTestFile = !calc->useTestFile;
 		}
+		if (BtnPressed(Btn_Up) || BtnPressed(Btn_Down))
+		{
+			if (BtnPressed(Btn_Up)) { HandleBtnExtended(Btn_Up); }
+			if (BtnPressed(Btn_Down)) { HandleBtnExtended(Btn_Down); }
+			calc->doSecondPart = !calc->doSecondPart;
+		}
 		
 		if (BtnPressed(Btn_A))
 		{
 			HandleBtnExtended(Btn_A);
 			MyStr_t inputFilePath = (calc->useTestFile ? gl->selectedDayInfo->testInputPath : gl->selectedDayInfo->realInputPath);
+			inputFilePath = PrintInArenaStr(scratch, "Resources/Text/%.*s", StrPrint(inputFilePath));
 			if (ReadEntireFile(false, inputFilePath, &calc->fileContents, mainHeap))
 			{
 				calc->fileChosen = true;
@@ -152,9 +160,20 @@ void UpdateAppState_Calculator()
 	{
 		for (u64 iIndex = 0; iIndex < numItersToPerform; iIndex++)
 		{
-			MyStr_t resultStr = MyStr_Empty;
 			calc->numIterationsPerformed++;
-			if (gl->selectedDayInfo->calculateFunc(calc->dayState, calc->fileContents, calc->debugOutputOn, scratch, &resultStr, &calc->progress))
+			
+			bool finishedCalculation = false;
+			MyStr_t resultStr = MyStr_Empty;
+			if (calc->doSecondPart)
+			{
+				finishedCalculation = gl->selectedDayInfo->secondCalculateFunc(calc->dayState, calc->fileContents, calc->debugOutputOn, scratch, &resultStr, &calc->progress);
+			}
+			else
+			{
+				finishedCalculation = gl->selectedDayInfo->firstCalculateFunc(calc->dayState, calc->fileContents, calc->debugOutputOn, scratch, &resultStr, &calc->progress);
+			}
+			
+			if (finishedCalculation)
 			{
 				calc->answerStr = AllocString(mainHeap, &resultStr);
 				calc->doneCalculating = true;
@@ -247,44 +266,44 @@ void RenderAppState_Calculator(bool isOnTop)
 	PdSetDrawMode(kDrawModeInverted);
 	
 	// +==============================+
-	// |      Render File Choice      |
+	// | Render File and Part Choices |
 	// +==============================+
 	if (!calc->fileChosen)
 	{
 		PdBindFont(&gl->mainFont);
-		reci leftRec = NewReci(0, 0, ScreenSize.width/2, ScreenSize.height);
-		v2i leftCenter = NewVec2i(leftRec.x + leftRec.width/2, leftRec.y + leftRec.height/2 - boundFont->lineHeight/2);
-		reci rightRec = NewReci(ScreenSize.width/2, 0, ScreenSize.width/2, ScreenSize.height);
-		v2i rightCenter = NewVec2i(rightRec.x + rightRec.width/2, rightRec.y + rightRec.height/2 - boundFont->lineHeight/2);
+		reci topLeftRec = NewReci(0, 0, ScreenSize.width/2, ScreenSize.height/2);
+		v2i topLeftCenter = NewVec2i(topLeftRec.x + topLeftRec.width/2, topLeftRec.y + topLeftRec.height/2 - boundFont->lineHeight/2);
+		reci bottomLeftRec = NewReci(0, ScreenSize.height/2, ScreenSize.width/2, ScreenSize.height/2);
+		v2i bottomLeftCenter = NewVec2i(bottomLeftRec.x + bottomLeftRec.width/2, bottomLeftRec.y + bottomLeftRec.height/2 - boundFont->lineHeight/2);
+		reci topRightRec = NewReci(ScreenSize.width/2, 0, ScreenSize.width/2, ScreenSize.height/2);
+		v2i topRightCenter = NewVec2i(topRightRec.x + topRightRec.width/2, topRightRec.y + topRightRec.height/2 - boundFont->lineHeight/2);
+		reci bottomRightRec = NewReci(ScreenSize.width/2, ScreenSize.height/2, ScreenSize.width/2, ScreenSize.height/2);
+		v2i bottomRightCenter = NewVec2i(bottomRightRec.x + bottomRightRec.width/2, bottomRightRec.y + bottomRightRec.height/2 - boundFont->lineHeight/2);
 		
-		if (calc->useTestFile)
-		{
-			leftRec = ReciDeflate(leftRec, Vec2iFill(RoundR32i(Oscillate(0, 8, 1500))));
-		}
-		else
-		{
-			rightRec = ReciDeflate(rightRec, Vec2iFill(RoundR32i(Oscillate(0, 8, 1500))));
-		}
+		reci* selectedRec = nullptr;
+		if (calc->useTestFile) { selectedRec = (calc->doSecondPart) ? &bottomLeftRec : &topLeftRec; }
+		else { selectedRec = (calc->doSecondPart) ? &bottomRightRec : &topRightRec; }
+		*selectedRec = ReciDeflate(*selectedRec, Vec2iFill(RoundR32i(Oscillate(0, 8, 1500))));
 		
-		PdDrawRecOutline(leftRec, 10, false, kColorBlack);
-		PdDrawRecOutline(leftRec, 5, false, kColorWhite);
-		PdDrawText("Test", leftCenter, TextAlign_Center);
-		if (calc->useTestFile)
-		{
-			LCDBitmapDrawMode oldDrawMode = PdSetDrawMode(kDrawModeNXOR);
-			PdDrawRec(leftRec, kColorBlack);
-			PdSetDrawMode(oldDrawMode);
-		}
+		PdDrawRecOutline(topLeftRec, 10, false, kColorBlack);
+		PdDrawRecOutline(topLeftRec, 5, false, kColorWhite);
+		PdDrawText("Test A", topLeftCenter, TextAlign_Center);
 		
-		PdDrawRecOutline(rightRec, 10, false, kColorBlack);
-		PdDrawRecOutline(rightRec, 5, false, kColorWhite);
-		PdDrawText("Real", rightCenter, TextAlign_Center);
-		if (!calc->useTestFile)
-		{
-			LCDBitmapDrawMode oldDrawMode = PdSetDrawMode(kDrawModeNXOR);
-			PdDrawRec(rightRec, kColorBlack);
-			PdSetDrawMode(oldDrawMode);
-		}
+		PdDrawRecOutline(bottomLeftRec, 10, false, kColorBlack);
+		PdDrawRecOutline(bottomLeftRec, 5, false, kColorWhite);
+		PdDrawText("Test B", bottomLeftCenter, TextAlign_Center);
+		
+		PdDrawRecOutline(topRightRec, 10, false, kColorBlack);
+		PdDrawRecOutline(topRightRec, 5, false, kColorWhite);
+		PdDrawText("Real A", topRightCenter, TextAlign_Center);
+		
+		PdDrawRecOutline(bottomRightRec, 10, false, kColorBlack);
+		PdDrawRecOutline(bottomRightRec, 5, false, kColorWhite);
+		PdDrawText("Real B", bottomRightCenter, TextAlign_Center);
+		
+		LCDBitmapDrawMode oldDrawMode = PdSetDrawMode(kDrawModeNXOR);
+		PdDrawRec(*selectedRec, kColorBlack);
+		PdSetDrawMode(oldDrawMode);
 	}
 	// +==============================+
 	// |    Render Basic Info Text    |
@@ -308,6 +327,20 @@ void RenderAppState_Calculator(bool isOnTop)
 		else
 		{
 			PdDrawTextPrintEx(screenCenter, TextAlign_Center, "Answer: %.*s", StrPrint(calc->answerStr));
+			if (calc->useTestFile)
+			{
+				MyStr_t expectedResult = (calc->doSecondPart ? gl->selectedDayInfo->secondTestExpectedResult : gl->selectedDayInfo->firstTestExpectedResult);
+				v2i expectedTextPos = screenCenter + NewVec2i(0, boundFont->lineHeight);
+				if (StrEquals(expectedResult, calc->answerStr))
+				{
+					PdDrawText("Correct!", expectedTextPos, TextAlign_Center);
+				}
+				else
+				{
+					PdDrawTextPrintEx(expectedTextPos, TextAlign_Center, "Expected: %.*s", StrPrint(expectedResult));
+				}
+				
+			}
 			PdDrawTextPrintEx(bottomRight, TextAlign_Right, "Iterations: %llu", calc->numIterationsPerformed);
 		}
 	}

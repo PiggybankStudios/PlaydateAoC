@@ -19,6 +19,7 @@ struct CalculatorState_t
 	
 	bool fileChosen;
 	bool useTestFile;
+	bool doSecondPart;
 	
 	MyStr_t fileContents;
 	u64 dayStateSize;

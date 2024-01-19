@@ -9,10 +9,9 @@ Date:   01\18\2024
 // +==============================+
 // |       REGISTER_AOC_DAY       |
 // +==============================+
-// #define REGISTER_AOC_DAY(year, day, stateStructType, calculateFunction, testPath, realPath)
+// #define REGISTER_AOC_DAY(year, day, stateStructType, testPath, realPath, firstFunc, firstTestStr, secondFunc, secondTestStr)
 
-REGISTER_AOC_DAY(2016, 2, Aoc2016_Day02_State_t, Calculate_Aoc2016_Day02, "Resources/Text/input_2016_02_test.txt", "Resources/Text/input_2016_02.txt");
-REGISTER_AOC_DAY(2016, 2, Aoc2016_Day02_State_t, Calculate_Aoc2016_Day02x, "Resources/Text/input_2016_02_test.txt", "Resources/Text/input_2016_02.txt");
+REGISTER_AOC_DAY(2016, 2, Aoc2016_Day02_State_t, "input_2016_02_test.txt", "input_2016_02_real.txt", Calculate_Aoc2016_Day02A, "1985", Calculate_Aoc2016_Day02B, "5DB3");
 
 #undef REGISTER_AOC_DAY
 

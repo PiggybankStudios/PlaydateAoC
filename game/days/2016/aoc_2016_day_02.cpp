@@ -15,10 +15,10 @@ struct Aoc2016_Day02_State_t
 };
 
 // +==============================+
-// |   Calculate_Aoc2016_Day02    |
+// |   Calculate_Aoc2016_Day02A   |
 // +==============================+
-// bool Calculate_Aoc2016_Day02(void* statePntr, MyStr_t inputFile, bool debug, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
-CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
+// bool Calculate_Aoc2016_Day02A(void* statePntr, MyStr_t inputFile, bool debug, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
+CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02A)
 {
 	NotNull(statePntr);
 	Aoc2016_Day02_State_t* state = (Aoc2016_Day02_State_t*)statePntr;
@@ -98,10 +98,10 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
 }
 
 // +==============================+
-// |   Calculate_Aoc2016_Day02x   |
+// |   Calculate_Aoc2016_Day02B   |
 // +==============================+
-// bool Calculate_Aoc2016_Day02x(void* statePntr, MyStr_t inputFile, bool debug, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
-CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
+// bool Calculate_Aoc2016_Day02B(void* statePntr, MyStr_t inputFile, bool debug, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
+CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02B)
 {
 	NotNull(statePntr);
 	Aoc2016_Day02_State_t* state = (Aoc2016_Day02_State_t*)statePntr;
