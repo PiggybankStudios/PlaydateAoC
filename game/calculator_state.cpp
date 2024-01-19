@@ -33,6 +33,8 @@ void StartAppState_Calculator(bool initialize, AppState_t prevState, MyStr_t tra
 			MyMemSet(calc->dayState, 0x00, calc->dayStateSize);
 		}
 		
+		ClearStruct(calc->progress);
+		
 		calc->initialized = true;
 		FreeScratchArena(scratch);
 	}
@@ -95,8 +97,8 @@ void UpdateAppState_Calculator()
 		{
 			calc->prevCrankAngle = ToDegrees32(AngleFixR32(ToRadians32(calc->prevCrankAngle + (CALC_CRANK_ITER_ANGLE * numSteps * SignOfR32(crankDelta)))));
 			calc->numIterationsPerformed += (u64)numSteps;
-			MyStr_t resultStr;
-			if (gl->selectedDayInfo->calculateFunc(calc->dayState, (u64)numSteps, &resultStr))
+			MyStr_t resultStr = MyStr_Empty;
+			if (gl->selectedDayInfo->calculateFunc(calc->dayState, (u64)numSteps, scratch, &resultStr, &calc->progress))
 			{
 				calc->answerStr = AllocString(mainHeap, &resultStr);
 				calc->doneCalculating = true;
@@ -125,15 +127,16 @@ void RenderAppState_Calculator(bool isOnTop)
 	PdBindFont(&pig->debugFont);
 	if (calc->numIterationsPerformed == 0)
 	{
-		PdDrawText("Crank to calculate...", NewVec2i(180, 115));
+		PdDrawText("Crank to calculate...", NewVec2i(150, 115));
 	}
 	else if (!calc->doneCalculating)
 	{
-		PdDrawTextPrint(NewVec2i(180, 115), "Calculating %llu...", calc->numIterationsPerformed);
+		r32 completionAmount = (r32)calc->progress.amountCompleted / (r32)calc->progress.amountExpected;
+		PdDrawTextPrint(NewVec2i(150, 115), "Calculating %llu %.02f%%...", calc->numIterationsPerformed, completionAmount * 100.0f);
 	}
 	else
 	{
-		PdDrawTextPrint(NewVec2i(180, 115), "Answer: %.*s", StrPrint(calc->answerStr));
+		PdDrawTextPrint(NewVec2i(150, 115), "Answer: %.*s", StrPrint(calc->answerStr));
 	}
 	
 	PdSetDrawMode(kDrawModeCopy);

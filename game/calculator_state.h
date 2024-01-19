@@ -19,6 +19,7 @@ struct CalculatorState_t
 	r32 prevCrankAngle; //degrees
 	u64 dayStateSize;
 	void* dayState;
+	ProgressInfo_t progress;
 	
 	u64 numIterationsPerformed;
 	bool doneCalculating;

@@ -10,7 +10,13 @@ Date:   12\19\2023
 #include "game_version.h"
 #include "game_defines.h"
 
-#define CALCULATE_DAY_FUNC_DEFINITION(functionName) bool functionName(void* statePntr, u64 numIter, MyStr_t* result)
+struct ProgressInfo_t
+{
+	u64 amountCompleted;
+	u64 amountExpected;
+};
+
+#define CALCULATE_DAY_FUNC_DEFINITION(functionName) bool functionName(void* statePntr, u64 numIter, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
 typedef CALCULATE_DAY_FUNC_DEFINITION(CalculateDayFunc_f);
 
 struct DayInfo_t
