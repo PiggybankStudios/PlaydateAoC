@@ -18,7 +18,7 @@ struct Aoc2016_Day02_State_t
 // +==============================+
 // |   Calculate_Aoc2016_Day02    |
 // +==============================+
-// bool Calculate_Aoc2016_Day02(void* statePntr, u64 numIter, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
+// bool Calculate_Aoc2016_Day02(void* statePntr, bool debug, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
 CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
 {
 	NotNull(statePntr);
@@ -31,7 +31,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
 		Assert(readSuccess);
 		state->cIndex = 0;
 		state->movedSinceLastCode = false;
-		PrintLine_D("Input is %llu chars", state->input.length);
+		if (debug) { PrintLine_D("Input is %llu chars", state->input.length); }
 		
 		state->position = NewVec2i(1, 1);
 		CreateVarArray(&state->codeChars, mainHeap, sizeof(char));
@@ -54,7 +54,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
 				char* newCodeChar = VarArrayAdd(&state->codeChars, char);
 				NotNull(newCodeChar);
 				*newCodeChar = '1' + (state->position.x + 3*state->position.y);
-				PrintLine_D("Added %c to the code", *newCodeChar);
+				if (debug) { PrintLine_D("Added %c to the code", *newCodeChar); }
 			}
 			state->movedSinceLastCode = false;
 		}
@@ -62,31 +62,31 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
 		{
 			if (state->position.y > 0) { state->position.y--; }
 			state->movedSinceLastCode = true;
-			PrintLine_D("Stepped up to (%d, %d)", state->position.x, state->position.y);
+			if (debug) { PrintLine_D("Stepped up to (%d, %d)", state->position.x, state->position.y); }
 		}
 		else if (nextChar == 'D' || nextChar == 'd')
 		{
 			if (state->position.y < 2) { state->position.y++; }
 			state->movedSinceLastCode = true;
-			PrintLine_D("Stepped down to (%d, %d)", state->position.x, state->position.y);
+			if (debug) { PrintLine_D("Stepped down to (%d, %d)", state->position.x, state->position.y); }
 		}
 		else if (nextChar == 'L' || nextChar == 'l')
 		{
 			if (state->position.x > 0) { state->position.x--; }
 			state->movedSinceLastCode = true;
-			PrintLine_D("Stepped left to (%d, %d)", state->position.x, state->position.y);
+			if (debug) { PrintLine_D("Stepped left to (%d, %d)", state->position.x, state->position.y); }
 		}
 		else if (nextChar == 'R' || nextChar == 'r')
 		{
 			if (state->position.x < 2) { state->position.x++; }
 			state->movedSinceLastCode = true;
-			PrintLine_D("Stepped right to (%d, %d)", state->position.x, state->position.y);
+			if (debug) { PrintLine_D("Stepped right to (%d, %d)", state->position.x, state->position.y); }
 		}
 		
-		PrintLine_D("Processed %llu/%llu chars", state->cIndex, state->input.length);
+		if (debug) { PrintLine_D("Processed %llu/%llu chars", state->cIndex, state->input.length); }
 		if (state->cIndex > state->input.length)
 		{
-			WriteLine_I("The end!");
+			if (debug) { WriteLine_I("The end!"); }
 			state->completed = true;
 		}
 		
@@ -105,7 +105,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
 // +==============================+
 // |   Calculate_Aoc2016_Day02x   |
 // +==============================+
-// bool Calculate_Aoc2016_Day02x(void* statePntr, u64 numIter, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
+// bool Calculate_Aoc2016_Day02x(void* statePntr, bool debug, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
 CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 {
 	NotNull(statePntr);
@@ -118,7 +118,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 		Assert(readSuccess);
 		state->cIndex = 0;
 		state->movedSinceLastCode = false;
-		PrintLine_D("Input is %llu chars", state->input.length);
+		if (debug) { PrintLine_D("Input is %llu chars", state->input.length); }
 		
 		state->position = NewVec2i(0, 2);
 		CreateVarArray(&state->codeChars, mainHeap, sizeof(char));
@@ -149,7 +149,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 				char* newCodeChar = VarArrayAdd(&state->codeChars, char);
 				NotNull(newCodeChar);
 				*newCodeChar = keyCharTable[(state->position.x + 5*state->position.y)];
-				PrintLine_D("Added %c to the code", *newCodeChar);
+				if (debug) { PrintLine_D("Added %c to the code", *newCodeChar); }
 			}
 			state->movedSinceLastCode = false;
 		}
@@ -158,7 +158,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 			if (state->position.y-1 >= 2 - state->position.x && state->position.y-1 >= -2 + state->position.x)
 			{
 				state->position.y--;
-				PrintLine_D("Stepped up to (%d, %d)", state->position.x, state->position.y);
+				if (debug) { PrintLine_D("Stepped up to (%d, %d)", state->position.x, state->position.y); }
 			}
 			state->movedSinceLastCode = true;
 		}
@@ -167,7 +167,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 			if (state->position.y+1 <= 2 + state->position.x && state->position.y+1 <= 6 - state->position.x)
 			{
 				state->position.y++;
-				PrintLine_D("Stepped down to (%d, %d)", state->position.x, state->position.y);
+				if (debug) { PrintLine_D("Stepped down to (%d, %d)", state->position.x, state->position.y); }
 			}
 			state->movedSinceLastCode = true;
 		}
@@ -176,7 +176,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 			if (state->position.x-1 >= 2 - state->position.y && state->position.x-1 >= -2 + state->position.y)
 			{
 				state->position.x--;
-				PrintLine_D("Stepped left sto (%d, %d)", state->position.x, state->position.y);
+				if (debug) { PrintLine_D("Stepped left sto (%d, %d)", state->position.x, state->position.y); }
 			}
 			state->movedSinceLastCode = true;
 		}
@@ -185,15 +185,15 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 			if (state->position.x+1 <= 2 + state->position.y && state->position.x+1 <= 6 - state->position.y)
 			{
 				state->position.x++;
-				PrintLine_D("Stepped right to (%d, %d)", state->position.x, state->position.y);
+				if (debug) { PrintLine_D("Stepped right to (%d, %d)", state->position.x, state->position.y); }
 			}
 			state->movedSinceLastCode = true;
 		}
 		
-		PrintLine_D("Processed %llu/%llu chars", state->cIndex, state->input.length);
+		if (debug) { PrintLine_D("Processed %llu/%llu chars", state->cIndex, state->input.length); }
 		if (state->cIndex > state->input.length)
 		{
-			WriteLine_I("The end!");
+			if (debug) { WriteLine_I("The end!"); }
 			state->completed = true;
 		}
 		

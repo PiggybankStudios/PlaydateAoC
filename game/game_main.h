@@ -16,7 +16,7 @@ struct ProgressInfo_t
 	u64 amountExpected;
 };
 
-#define CALCULATE_DAY_FUNC_DEFINITION(functionName) bool functionName(void* statePntr, u64 numIter, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
+#define CALCULATE_DAY_FUNC_DEFINITION(functionName) bool functionName(void* statePntr, bool debug, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
 typedef CALCULATE_DAY_FUNC_DEFINITION(CalculateDayFunc_f);
 
 struct DayInfo_t
@@ -32,6 +32,8 @@ struct GameGlobals_t
 	bool initialized;
 	
 	SpriteSheet_t btnPromptsSheet;
+	Font_t mainFont;
+	
 	VarArray_t dayInfos;
 	
 	DayInfo_t* selectedDayInfo;

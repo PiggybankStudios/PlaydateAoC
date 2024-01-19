@@ -34,6 +34,8 @@ void StartAppState_Calculator(bool initialize, AppState_t prevState, MyStr_t tra
 		}
 		
 		ClearStruct(calc->progress);
+		calc->numItersPerCrankMove = 1;
+		calc->debugOutputOn = true;
 		
 		calc->initialized = true;
 		FreeScratchArena(scratch);
@@ -57,6 +59,7 @@ void StopAppState_Calculator(bool deinitialize, AppState_t nextState)
 		{
 			FreeMem(mainHeap, calc->dayState, calc->dayStateSize);
 		}
+		FreeString(mainHeap, &calc->answerStr);
 		ClearPointer(calc);
 	}
 }
@@ -88,6 +91,7 @@ void UpdateAppState_Calculator()
 	// +==============================+
 	// |   Handle Crank to Iterate    |
 	// +==============================+
+	u64 numItersToPerform = 0;
 	if (CrankMoved() && !calc->doneCalculating)
 	{
 		HandleCrankDelta();
@@ -96,14 +100,92 @@ void UpdateAppState_Calculator()
 		if (numSteps > 0)
 		{
 			calc->prevCrankAngle = ToDegrees32(AngleFixR32(ToRadians32(calc->prevCrankAngle + (CALC_CRANK_ITER_ANGLE * numSteps * SignOfR32(crankDelta)))));
-			calc->numIterationsPerformed += (u64)numSteps;
+			numItersToPerform = (u64)numSteps * calc->numItersPerCrankMove;
+		}
+	}
+	
+	// +==================================+
+	// | Btn_Right Does Single Iterations |
+	// +==================================+
+	if (BtnPressed(Btn_Right))
+	{
+		HandleBtnExtended(Btn_Right);
+		numItersToPerform += 1;
+	}
+	
+	// +==============================+
+	// |    Calculate Iteratively     |
+	// +==============================+
+	if (numItersToPerform > 0)
+	{
+		for (u64 iIndex = 0; iIndex < numItersToPerform; iIndex++)
+		{
 			MyStr_t resultStr = MyStr_Empty;
-			if (gl->selectedDayInfo->calculateFunc(calc->dayState, (u64)numSteps, scratch, &resultStr, &calc->progress))
+			if (gl->selectedDayInfo->calculateFunc(calc->dayState, calc->debugOutputOn, scratch, &resultStr, &calc->progress))
 			{
 				calc->answerStr = AllocString(mainHeap, &resultStr);
 				calc->doneCalculating = true;
+				break;
 			}
 		}
+		calc->numIterationsPerformed += numItersToPerform;
+	}
+	
+	// +==========================================+
+	// | Up/Down Changes Num Iters Per Crank Move |
+	// +==========================================+
+	if (BtnPressed(Btn_Up) || BtnPressed(Btn_Down))
+	{
+		if (BtnPressed(Btn_Up)) { HandleBtnExtended(Btn_Up); }
+		if (BtnPressed(Btn_Down)) { HandleBtnExtended(Btn_Down); }
+		u64 options[] = NUM_ITERS_PER_CRANK_MOVE_OPTIONS;
+		u64 currentIndex = 0;
+		for (u64 oIndex = 0; oIndex < ArrayCount(options); oIndex++)
+		{
+			if (options[oIndex] == calc->numItersPerCrankMove) { currentIndex = oIndex; break; }
+		}
+		
+		if (BtnPressedRaw(Btn_Up))
+		{
+			if (currentIndex < ArrayCount(options)-1)
+			{
+				currentIndex++;
+			}
+		}
+		else
+		{
+			if (currentIndex > 0)
+			{
+				currentIndex--;
+			}
+		}
+		
+		calc->numItersPerCrankMove = options[currentIndex];
+	}
+	
+	// +==============================+
+	// |         Btn_B Resets         |
+	// +==============================+
+	if (BtnPressed(Btn_B) && calc->doneCalculating)
+	{
+		HandleBtnExtended(Btn_B);
+		if (calc->dayState != nullptr)
+		{
+			MyMemSet(calc->dayState, 0x00, calc->dayStateSize);
+		}
+		FreeString(mainHeap, &calc->answerStr);
+		calc->doneCalculating = false;
+		calc->numIterationsPerformed = 0;
+	}
+	
+	// +===============================+
+	// | Btn_Left Toggles Debug Output |
+	// +===============================+
+	if (BtnPressed(Btn_Left))
+	{
+		HandleBtnExtended(Btn_Left);
+		PrintLine_D("Debug output turned %s", calc->debugOutputOn ? "ON" : "OFF");
+		calc->debugOutputOn = !calc->debugOutputOn;
 	}
 	
 	FreeScratchArena(scratch);
@@ -124,19 +206,33 @@ void RenderAppState_Calculator(bool isOnTop)
 	// |    Render Basic Info Text    |
 	// +==============================+
 	PdSetDrawMode(kDrawModeInverted);
-	PdBindFont(&pig->debugFont);
+	PdBindFont(&gl->mainFont);
 	if (calc->numIterationsPerformed == 0)
 	{
-		PdDrawText("Crank to calculate...", NewVec2i(150, 115));
+		MyStr_t displayStr = NewStr("Crank to calculate...");
+		v2i displayStrSize = MeasureText(gl->mainFont.font, displayStr);
+		v2i displayStrPos = NewVec2i(ScreenSize.width/2 - displayStrSize.width/2, ScreenSize.height/2 - displayStrSize.height/2);
+		PdDrawText(displayStr, displayStrPos);
 	}
 	else if (!calc->doneCalculating)
 	{
 		r32 completionAmount = (r32)calc->progress.amountCompleted / (r32)calc->progress.amountExpected;
-		PdDrawTextPrint(NewVec2i(150, 115), "Calculating %llu %.02f%%...", calc->numIterationsPerformed, completionAmount * 100.0f);
+		MyStr_t displayStr = PrintInArenaStr(scratch, "Calculating %llu %.02f%%...", calc->numIterationsPerformed, completionAmount * 100.0f);
+		v2i displayStrSize = MeasureText(gl->mainFont.font, displayStr);
+		v2i displayStrPos = NewVec2i(ScreenSize.width/2 - displayStrSize.width/2, ScreenSize.height/2 - displayStrSize.height/2);
+		PdDrawText(displayStr, displayStrPos);
+		PdDrawTextPrint(NewVec2i(5, ScreenSize.height - 5 - gl->mainFont.lineHeight), "Iters: %llu", calc->numItersPerCrankMove);
+		MyStr_t debugOutputStr = PrintInArenaStr(scratch, "Debug: %s", calc->debugOutputOn ? "ON" : "OFF");
+		v2i debugOutputSize = MeasureText(gl->mainFont.font, debugOutputStr);
+		v2i debugOutputPos = NewVec2i(ScreenSize.width - 5 - debugOutputSize.width, ScreenSize.height - 5 - debugOutputSize.height);
+		PdDrawText(debugOutputStr, debugOutputPos);
 	}
 	else
 	{
-		PdDrawTextPrint(NewVec2i(150, 115), "Answer: %.*s", StrPrint(calc->answerStr));
+		MyStr_t displayStr = PrintInArenaStr(scratch, "Answer: %.*s", StrPrint(calc->answerStr));
+		v2i displayStrSize = MeasureText(gl->mainFont.font, displayStr);
+		v2i displayStrPos = NewVec2i(ScreenSize.width/2 - displayStrSize.width/2, ScreenSize.height/2 - displayStrSize.height/2);
+		PdDrawText(displayStr, displayStrPos);
 	}
 	
 	PdSetDrawMode(kDrawModeCopy);

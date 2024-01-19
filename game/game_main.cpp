@@ -39,6 +39,9 @@ AppState_t InitGame()
 	gl->btnPromptsSheet = LoadSpriteSheet(NewStr("Resources/Sheets/btn_prompts"), 8);
 	Assert(gl->btnPromptsSheet.isValid);
 	
+	gl->mainFont = LoadFont(NewStr("Resources/Fonts/border_basic"));
+	Assert(gl->mainFont.isValid);
+	
 	pd->display->setRefreshRate((r32)REFRESH_RATE);
 	
 	u64 numRegisteredDays = 0;
