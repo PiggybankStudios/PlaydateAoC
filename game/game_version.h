@@ -9,6 +9,6 @@ Date:   12\19\2023
 
 #define GAME_VERSION_MAJOR 0
 #define GAME_VERSION_MINOR 1
-#define GAME_VERSION_BUILD 7
+#define GAME_VERSION_BUILD 20
 
 #endif //  _GAME_VERSION_H

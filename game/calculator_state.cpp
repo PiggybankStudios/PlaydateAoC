@@ -1,46 +1,46 @@
 /*
-File:   game_state.cpp
+File:   calculator_state.cpp
 Author: Taylor Robbins
 Date:   12\19\2023
 Description: 
-	** Holds the AppState that runs the main game (where you actually play Sudoku)
+	** Holds the AppState that runs the calculator for a particular day
 */
 
-GameState_t* game = nullptr;
+CalculatorState_t* calc = nullptr;
 
-void GameMainMenuSelectedCallback(void* userPntr)
+void BackToSelectorCallback(void* userPntr)
 {
 	UNUSED(userPntr);
-	game->mainMenuRequested = true;
+	calc->backToSelectorRequested = true;
 }
 
 // +--------------------------------------------------------------+
 // |                            Start                             |
 // +--------------------------------------------------------------+
-void StartAppState_Game(bool initialize, AppState_t prevState, MyStr_t transitionStr)
+void StartAppState_Calculator(bool initialize, AppState_t prevState, MyStr_t transitionStr)
 {
 	if (initialize)
 	{
 		MemArena_t* scratch = GetScratchArena();
 		
-		game->initialized = true;
+		calc->initialized = true;
 		FreeScratchArena(scratch);
 	}
 	
-	game->mainMenuItem = pd->system->addMenuItem("Main Menu", GameMainMenuSelectedCallback, nullptr);
+	calc->backToSelectorItem = pd->system->addMenuItem("Back", BackToSelectorCallback, nullptr);
 }
 
 // +--------------------------------------------------------------+
 // |                             Stop                             |
 // +--------------------------------------------------------------+
-void StopAppState_Game(bool deinitialize, AppState_t nextState)
+void StopAppState_Calculator(bool deinitialize, AppState_t nextState)
 {
-	pd->system->removeMenuItem(game->mainMenuItem);
-	game->mainMenuItem = nullptr;
+	pd->system->removeMenuItem(calc->backToSelectorItem);
+	calc->backToSelectorItem = nullptr;
 	
 	if (deinitialize)
 	{
-		ClearPointer(game);
+		ClearPointer(calc);
 	}
 }
 
@@ -55,13 +55,13 @@ void GameUiLayout()
 // +--------------------------------------------------------------+
 // |                            Update                            |
 // +--------------------------------------------------------------+
-void UpdateAppState_Game()
+void UpdateAppState_Calculator()
 {
 	MemArena_t* scratch = GetScratchArena();
 	
-	if (game->mainMenuRequested)
+	if (calc->backToSelectorRequested)
 	{
-		game->mainMenuRequested = false;
+		calc->backToSelectorRequested = false;
 		PopAppState();
 	}
 	
@@ -71,7 +71,7 @@ void UpdateAppState_Game()
 // +--------------------------------------------------------------+
 // |                            Render                            |
 // +--------------------------------------------------------------+
-void RenderAppState_Game(bool isOnTop)
+void RenderAppState_Calculator(bool isOnTop)
 {
 	MemArena_t* scratch = GetScratchArena();
 	GameUiLayout();
@@ -82,7 +82,7 @@ void RenderAppState_Game(bool isOnTop)
 	//TODO: Remove me!
 	PdSetDrawMode(kDrawModeInverted);
 	PdBindFont(&pig->debugFont);
-	PdDrawText("The game...", NewVec2i(180, 115));
+	PdDrawText("The calculator...", NewVec2i(180, 115));
 	PdSetDrawMode(kDrawModeCopy);
 	
 	// +==============================+
@@ -111,14 +111,14 @@ void RenderAppState_Game(bool isOnTop)
 // +--------------------------------------------------------------+
 // |                           Register                           |
 // +--------------------------------------------------------------+
-void RegisterAppState_Game()
+void RegisterAppState_Calculator()
 {
-	game = (GameState_t*)RegisterAppState(
-		AppState_Game,
-		sizeof(GameState_t),
-		StartAppState_Game,
-		StopAppState_Game,
-		UpdateAppState_Game,
-		RenderAppState_Game
+	calc = (CalculatorState_t*)RegisterAppState(
+		AppState_Calculator,
+		sizeof(CalculatorState_t),
+		StartAppState_Calculator,
+		StopAppState_Calculator,
+		UpdateAppState_Calculator,
+		RenderAppState_Calculator
 	);
 }

@@ -1,47 +1,47 @@
 /*
-File:   main_menu.cpp
+File:   day_selector_state.cpp
 Author: Taylor Robbins
 Date:   12\19\2023
 Description: 
-	** Holds the AppState that runs the Main Menu (where you can choose to play the game, change settings, or exit )
+	** Holds the AppState that lets the user choose which day to calculate
 */
 
-MainMenuState_t* mmenu = nullptr;
+DaySelectorState_t* dsel = nullptr;
 
 // +--------------------------------------------------------------+
 // |                            Start                             |
 // +--------------------------------------------------------------+
-void StartAppState_MainMenu(bool initialize, AppState_t prevState, MyStr_t transitionStr)
+void StartAppState_DaySelector(bool initialize, AppState_t prevState, MyStr_t transitionStr)
 {
 	if (initialize)
 	{
 		
-		mmenu->initialized = true;
+		dsel->initialized = true;
 	}
 }
 
 // +--------------------------------------------------------------+
 // |                             Stop                             |
 // +--------------------------------------------------------------+
-void StopAppState_MainMenu(bool deinitialize, AppState_t nextState)
+void StopAppState_DaySelector(bool deinitialize, AppState_t nextState)
 {
 	if (deinitialize)
 	{
-		ClearPointer(mmenu);
+		ClearPointer(dsel);
 	}
 }
 
 // +--------------------------------------------------------------+
 // |                            Update                            |
 // +--------------------------------------------------------------+
-void UpdateAppState_MainMenu()
+void UpdateAppState_DaySelector()
 {
 	MemArena_t* scratch = GetScratchArena();
 	
 	//TODO: Remove me!
 	if (BtnPressed(Btn_A))
 	{
-		PushAppState(AppState_Game);
+		PushAppState(AppState_Calculator);
 	}
 	
 	FreeScratchArena(scratch);
@@ -50,7 +50,7 @@ void UpdateAppState_MainMenu()
 // +--------------------------------------------------------------+
 // |                            Render                            |
 // +--------------------------------------------------------------+
-void RenderAppState_MainMenu(bool isOnTop)
+void RenderAppState_DaySelector(bool isOnTop)
 {
 	MemArena_t* scratch = GetScratchArena();
 	
@@ -59,7 +59,7 @@ void RenderAppState_MainMenu(bool isOnTop)
 	
 	//TODO: Remove me!
 	PdBindFont(&pig->debugFont);
-	PdDrawText("Main Menu (Press A)", NewVec2i(150, 115));
+	PdDrawText("Day Selector (Press A)", NewVec2i(150, 115));
 	
 	// +==============================+
 	// |      Render Debug Info       |
@@ -126,14 +126,14 @@ void RenderAppState_MainMenu(bool isOnTop)
 // +--------------------------------------------------------------+
 // |                           Register                           |
 // +--------------------------------------------------------------+
-void RegisterAppState_MainMenu()
+void RegisterAppState_DaySelector()
 {
-	mmenu = (MainMenuState_t*)RegisterAppState(
-		AppState_MainMenu,
-		sizeof(MainMenuState_t),
-		StartAppState_MainMenu,
-		StopAppState_MainMenu,
-		UpdateAppState_MainMenu,
-		RenderAppState_MainMenu
+	dsel = (DaySelectorState_t*)RegisterAppState(
+		AppState_DaySelector,
+		sizeof(DaySelectorState_t),
+		StartAppState_DaySelector,
+		StopAppState_DaySelector,
+		UpdateAppState_DaySelector,
+		RenderAppState_DaySelector
 	);
 }

@@ -15,8 +15,8 @@ GameGlobals_t* gl = nullptr;
 // |                         Source Files                         |
 // +--------------------------------------------------------------+
 #include "game_helpers.cpp"
-#include "main_menu.cpp"
-#include "game_state.cpp"
+#include "day_selector_state.cpp"
+#include "calculator_state.cpp"
 
 // +--------------------------------------------------------------+
 // |                        Main Functions                        |
@@ -27,8 +27,8 @@ AppState_t InitGame()
 	PrintLine_O("|     %s v%u.%u(%0u)     |", PROJECT_NAME, GAME_VERSION_MAJOR, GAME_VERSION_MINOR, GAME_VERSION_BUILD);
 	WriteLine_O("+==============================+");
 	
-	RegisterAppState_MainMenu();
-	RegisterAppState_Game();
+	RegisterAppState_DaySelector();
+	RegisterAppState_Calculator();
 	
 	gl = AllocStruct(fixedHeap, GameGlobals_t);
 	ClearPointer(gl);

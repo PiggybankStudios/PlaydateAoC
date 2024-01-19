@@ -8,6 +8,6 @@ Date:   12\19\2023
 #define _GAME_DEFINES_H
 
 #define REFRESH_RATE     50 //Hz
-#define FIRST_APP_STATE  AppState_MainMenu
+#define FIRST_APP_STATE  AppState_DaySelector
 
 #endif //  _GAME_DEFINES_H
