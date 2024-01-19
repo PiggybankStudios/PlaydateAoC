@@ -23,11 +23,22 @@ void StartAppState_Calculator(bool initialize, AppState_t prevState, MyStr_t tra
 	{
 		MemArena_t* scratch = GetScratchArena();
 		
+		NotNull(gl->selectedDayInfo);
+		
+		calc->dayStateSize = gl->selectedDayInfo->stateSize;
+		if (calc->dayStateSize > 0)
+		{
+			calc->dayState = AllocMem(mainHeap, calc->dayStateSize);
+			NotNull(calc->dayState);
+			MyMemSet(calc->dayState, 0x00, calc->dayStateSize);
+		}
+		
 		calc->initialized = true;
 		FreeScratchArena(scratch);
 	}
 	
 	calc->backToSelectorItem = pd->system->addMenuItem("Back", BackToSelectorCallback, nullptr);
+	calc->prevCrankAngle = input->crankAngle;
 }
 
 // +--------------------------------------------------------------+
@@ -40,6 +51,10 @@ void StopAppState_Calculator(bool deinitialize, AppState_t nextState)
 	
 	if (deinitialize)
 	{
+		if (calc->dayState != nullptr)
+		{
+			FreeMem(mainHeap, calc->dayState, calc->dayStateSize);
+		}
 		ClearPointer(calc);
 	}
 }
@@ -59,10 +74,34 @@ void UpdateAppState_Calculator()
 {
 	MemArena_t* scratch = GetScratchArena();
 	
+	// +==============================+
+	// |     Handle Back Selected     |
+	// +==============================+
 	if (calc->backToSelectorRequested)
 	{
 		calc->backToSelectorRequested = false;
 		PopAppState();
+	}
+	
+	// +==============================+
+	// |   Handle Crank to Iterate    |
+	// +==============================+
+	if (CrankMoved() && !calc->doneCalculating)
+	{
+		HandleCrankDelta();
+		r32 crankDelta = (input->crankAngle - calc->prevCrankAngle);
+		i32 numSteps = FloorR32i(AbsR32(crankDelta) / CALC_CRANK_ITER_ANGLE);
+		if (numSteps > 0)
+		{
+			calc->prevCrankAngle = ToDegrees32(AngleFixR32(ToRadians32(calc->prevCrankAngle + (CALC_CRANK_ITER_ANGLE * numSteps * SignOfR32(crankDelta)))));
+			calc->numIterationsPerformed += (u64)numSteps;
+			MyStr_t resultStr;
+			if (gl->selectedDayInfo->calculateFunc(calc->dayState, (u64)numSteps, &resultStr))
+			{
+				calc->answerStr = AllocString(mainHeap, &resultStr);
+				calc->doneCalculating = true;
+			}
+		}
 	}
 	
 	FreeScratchArena(scratch);
@@ -79,10 +118,24 @@ void RenderAppState_Calculator(bool isOnTop)
 	pd->graphics->clear(kColorBlack);
 	PdSetDrawMode(kDrawModeCopy);
 	
-	//TODO: Remove me!
+	// +==============================+
+	// |    Render Basic Info Text    |
+	// +==============================+
 	PdSetDrawMode(kDrawModeInverted);
 	PdBindFont(&pig->debugFont);
-	PdDrawText("The calculator...", NewVec2i(180, 115));
+	if (calc->numIterationsPerformed == 0)
+	{
+		PdDrawText("Crank to calculate...", NewVec2i(180, 115));
+	}
+	else if (!calc->doneCalculating)
+	{
+		PdDrawTextPrint(NewVec2i(180, 115), "Calculating %llu...", calc->numIterationsPerformed);
+	}
+	else
+	{
+		PdDrawTextPrint(NewVec2i(180, 115), "Answer: %.*s", StrPrint(calc->answerStr));
+	}
+	
 	PdSetDrawMode(kDrawModeCopy);
 	
 	// +==============================+

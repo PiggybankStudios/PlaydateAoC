@@ -31,6 +31,8 @@ void StartAppState_DaySelector(bool initialize, AppState_t prevState, MyStr_t tr
 		
 		dsel->initialized = true;
 	}
+	
+	dsel->prevCrankAngle = input->crankAngle;
 }
 
 // +--------------------------------------------------------------+
@@ -92,6 +94,7 @@ void UpdateAppState_DaySelector()
 		i32 numSteps = FloorR32i(AbsR32(crankDelta) / DSEL_CRANK_SENSITIVITY);
 		if (numSteps > 0)
 		{
+			dsel->prevCrankAngle = ToDegrees32(AngleFixR32(ToRadians32(dsel->prevCrankAngle + (CALC_CRANK_ITER_ANGLE * numSteps * SignOfR32(crankDelta)))));
 			for (i32 sIndex = 0; sIndex < numSteps; sIndex++)
 			{
 				if (dsel->selectionIndex < 0)

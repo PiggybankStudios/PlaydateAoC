@@ -88,6 +88,7 @@
 			"BufferedSocketBufferType_Routing",
 			"BufferedSocketBufferType_Rx",
 			"BufferedSocketBufferType_Tx",
+			"CALC_CRANK_ITER_ANGLE",
 			"CRANK_BTN_DEADZONE",
 			"CRANK_DELTA_DEADZONE",
 			"CyclicFunc2D_Default",
