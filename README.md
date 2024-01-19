@@ -5,3 +5,4 @@ Implementation of [Advent of Code](https://adventofcode.com/) problems on the pl
 # Screenshots
 ![Screenshot](/release/screenshots/AnimatedScreenshot_0_1.gif)
 ![Screenshot](/release/screenshots/Screenshot_0_2.png)
+![Screenshot](/release/screenshots/Screenshot_0_3.png)
