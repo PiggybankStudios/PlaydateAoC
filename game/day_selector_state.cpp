@@ -6,6 +6,9 @@ Description:
 	** Holds the AppState that lets the user choose which day to calculate
 */
 
+//TODO: Fix this, it's broken, only one button shows on screen
+//TODO: Add scrolling behavior when the selected button changes
+
 DaySelectorState_t* dsel = nullptr;
 
 // +--------------------------------------------------------------+
@@ -15,6 +18,16 @@ void StartAppState_DaySelector(bool initialize, AppState_t prevState, MyStr_t tr
 {
 	if (initialize)
 	{
+		CreateVarArray(&dsel->buttons, mainHeap, sizeof(DayBtn_t), gl->dayInfos.length);
+		VarArrayLoop(&gl->dayInfos, dIndex)
+		{
+			VarArrayLoopGet(DayInfo_t, dayInfo, &gl->dayInfos, dIndex);
+			DayBtn_t* newBtn = VarArrayAdd(&dsel->buttons, DayBtn_t);
+			NotNull(newBtn);
+			ClearPointer(newBtn);
+			newBtn->dayInfo = dayInfo;
+			newBtn->mainRec.size = DSEL_BTN_SIZE;
+		}
 		
 		dsel->initialized = true;
 	}
@@ -27,8 +40,38 @@ void StopAppState_DaySelector(bool deinitialize, AppState_t nextState)
 {
 	if (deinitialize)
 	{
+		FreeVarArray(&dsel->buttons);
 		ClearPointer(dsel);
 	}
+}
+
+// +--------------------------------------------------------------+
+// |                            Layout                            |
+// +--------------------------------------------------------------+
+void LayoutAppState_DaySelector()
+{
+	MemArena_t* scratch = GetScratchArena();
+	
+	dsel->buttonsListRec.size = Vec2i_Zero;
+	VarArrayLoop(&dsel->buttons, bIndex)
+	{
+		VarArrayLoopGet(DayBtn_t, btn, &dsel->buttons, bIndex);
+		dsel->buttonsListRec.width = MaxI32(dsel->buttonsListRec.width, btn->mainRec.width);
+		btn->mainRec.x = 0;
+		btn->mainRec.y = dsel->buttonsListRec.height;
+		if (bIndex > 0) { dsel->buttonsListRec.height += DSEL_BTN_PADDING; }
+		dsel->buttonsListRec.height += btn->mainRec.width;
+	}
+	
+	dsel->buttonsListRec.x = ScreenSize.width/2 - dsel->buttonsListRec.width/2;
+	dsel->buttonsListRec.y = ScreenSize.height/2 - dsel->buttonsListRec.height/2;
+	if (dsel->buttonsListRec.y < DSEL_BTN_PADDING) { dsel->buttonsListRec.y = DSEL_BTN_PADDING; }
+	
+	dsel->scrollMax = MaxR32(0, (r32)(dsel->buttonsListRec.height + DSEL_BTN_PADDING*2 - ScreenSize.height));
+	dsel->scroll = ClampR32(dsel->scroll, 0, dsel->scrollMax);
+	dsel->scrollGoto = ClampR32(dsel->scrollGoto, 0, dsel->scrollMax);
+	
+	FreeScratchArena(scratch);
 }
 
 // +--------------------------------------------------------------+
@@ -37,11 +80,94 @@ void StopAppState_DaySelector(bool deinitialize, AppState_t nextState)
 void UpdateAppState_DaySelector()
 {
 	MemArena_t* scratch = GetScratchArena();
+	LayoutAppState_DaySelector();
 	
-	//TODO: Remove me!
+	// +==============================+
+	// |         Handle Crank         |
+	// +==============================+
+	if (CrankMoved())
+	{
+		HandleCrankDelta();
+		r32 crankDelta = (input->crankAngle - dsel->prevCrankAngle);
+		i32 numSteps = FloorR32i(AbsR32(crankDelta) / DSEL_CRANK_SENSITIVITY);
+		if (numSteps > 0)
+		{
+			for (i32 sIndex = 0; sIndex < numSteps; sIndex++)
+			{
+				if (dsel->selectionIndex < 0)
+				{
+					if (dsel->buttons.length > 0)
+					{
+						dsel->selectionIndex = 0;
+					}
+				}
+				else if (crankDelta > 0)
+				{
+					dsel->selectionIndex++;
+					if ((u64)dsel->selectionIndex >= dsel->buttons.length) { dsel->selectionIndex = 0; }
+				}
+				else
+				{
+					dsel->selectionIndex--;
+					if (dsel->selectionIndex < 0) { dsel->selectionIndex = (i32)(dsel->buttons.length-1); }
+				}
+			}
+		}
+	}
+	
+	// +==============================+
+	// |       Handle Btn_Down        |
+	// +==============================+
+	if (BtnPressed(Btn_Down))
+	{
+		HandleBtnExtended(Btn_Down);
+		if (dsel->selectionIndex < 0)
+		{
+			if (dsel->buttons.length > 0)
+			{
+				dsel->selectionIndex = 0;
+			}
+		}
+		else
+		{
+			dsel->selectionIndex++;
+			if ((u64)dsel->selectionIndex >= dsel->buttons.length) { dsel->selectionIndex = 0; }
+		}
+	}
+	
+	// +==============================+
+	// |        Handle Btn_Up         |
+	// +==============================+
+	if (BtnPressed(Btn_Up))
+	{
+		HandleBtnExtended(Btn_Up);
+		if (dsel->selectionIndex < 0)
+		{
+			if (dsel->buttons.length > 0)
+			{
+				dsel->selectionIndex = 0;
+			}
+		}
+		else
+		{
+			dsel->selectionIndex--;
+			if (dsel->selectionIndex < 0) { dsel->selectionIndex = (i32)(dsel->buttons.length-1); }
+		}
+	}
+	
+	// +==============================+
+	// |    Btn_A Selects a Button    |
+	// +==============================+
 	if (BtnPressed(Btn_A))
 	{
-		PushAppState(AppState_Calculator);
+		HandleBtnExtended(Btn_A);
+		if (dsel->selectionIndex >= 0)
+		{
+			DayBtn_t* selectedBtn = VarArrayGet(&dsel->buttons, (u64)dsel->selectionIndex, DayBtn_t);
+			PrintLine_I("Selected Year %u Day %u...", (u32)selectedBtn->dayInfo->year, (u32)selectedBtn->dayInfo->day);
+			gl->selectedDayInfo = selectedBtn->dayInfo;
+			PushAppState(AppState_Calculator);
+		}
 	}
 	
 	FreeScratchArena(scratch);
@@ -53,13 +179,32 @@ void UpdateAppState_DaySelector()
 void RenderAppState_DaySelector(bool isOnTop)
 {
 	MemArena_t* scratch = GetScratchArena();
+	LayoutAppState_DaySelector();
 	
 	pd->graphics->clear(kColorWhite);
 	PdSetDrawMode(kDrawModeCopy);
 	
-	//TODO: Remove me!
-	PdBindFont(&pig->debugFont);
-	PdDrawText("Day Selector (Press A)", NewVec2i(150, 115));
+	// +==============================+
+	// |        Render Buttons        |
+	// +==============================+
+	VarArrayLoop(&dsel->buttons, bIndex)
+	{
+		VarArrayLoopGet(DayBtn_t, btn, &dsel->buttons, bIndex);
+		reci mainRec = btn->mainRec + dsel->buttonsListRec.topLeft + NewVec2i(0, RoundR32i(dsel->scroll));
+		// mainRec.y += (i32)bIndex; //TODO: Remove me!
+		bool isSelected = (dsel->selectionIndex >= 0 && (u64)dsel->selectionIndex == bIndex);
+		
+		if (RecisIntersect(mainRec, ScreenRec))
+		{
+			PdDrawRecOutline(mainRec, isSelected ? DSEL_BTN_OUTLINE_SELECTED_THICKNESS : DSEL_BTN_OUTLINE_THICKNESS);
+			
+			MyStr_t btnText = PrintInArenaStr(scratch, "%u Day %u", (u32)btn->dayInfo->year, (u32)btn->dayInfo->day);
+			v2i btnTextSize = MeasureText(pig->debugFont.font, btnText);
+			v2i btnTextPos = mainRec.topLeft + NewVec2i(mainRec.width/2, mainRec.height/2) - NewVec2i(btnTextSize.width/2, btnTextSize.height/2);
+			PdBindFont(&pig->debugFont);
+			PdDrawText(btnText, btnTextPos);
+		}
+	}
 	
 	// +==============================+
 	// |      Render Debug Info       |
