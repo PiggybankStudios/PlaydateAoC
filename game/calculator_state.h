@@ -7,7 +7,7 @@ Date:   12\19\2023
 #ifndef _CALCULATOR_STATE_H
 #define _CALCULATOR_STATE_H
 
-#define CALC_CRANK_ITER_ANGLE 10 //degrees
+#define CALC_CRANK_ITER_ANGLE 20 //degrees
 #define NUM_ITERS_PER_CRANK_MOVE_OPTIONS { 1, 3, 5, 10, 30, 50, 100, 300, 500, 1000, 3000, 5000, 10000, 30000, 50000, 100000, 300000, 500000, 1000000 }
 
 struct CalculatorState_t
@@ -17,13 +17,18 @@ struct CalculatorState_t
 	PDMenuItem* backToSelectorItem;
 	bool backToSelectorRequested;
 	
-	r32 prevCrankAngle; //degrees
-	u64 numItersPerCrankMove;
-	bool debugOutputOn;
+	bool fileChosen;
+	bool useTestFile;
+	
+	MyStr_t fileContents;
 	u64 dayStateSize;
 	void* dayState;
-	ProgressInfo_t progress;
 	
+	bool debugOutputOn;
+	r32 prevCrankAngle; //degrees
+	u64 numItersPerCrankMove;
+	
+	ProgressInfo_t progress;
 	u64 numIterationsPerformed;
 	bool doneCalculating;
 	MyStr_t answerStr;

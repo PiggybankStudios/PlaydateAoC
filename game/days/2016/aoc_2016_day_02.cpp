@@ -8,7 +8,6 @@ struct Aoc2016_Day02_State_t
 {
 	bool initialized;
 	bool completed;
-	MyStr_t input;
 	u64 cIndex;
 	v2i position;
 	bool movedSinceLastCode;
@@ -18,7 +17,7 @@ struct Aoc2016_Day02_State_t
 // +==============================+
 // |   Calculate_Aoc2016_Day02    |
 // +==============================+
-// bool Calculate_Aoc2016_Day02(void* statePntr, bool debug, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
+// bool Calculate_Aoc2016_Day02(void* statePntr, MyStr_t inputFile, bool debug, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
 CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
 {
 	NotNull(statePntr);
@@ -26,12 +25,9 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
 	
 	if (!state->initialized)
 	{
-		MyStr_t inputFilePath = BtnDownRaw(Btn_B) ? NewStr("Resources/Text/input_2016_02_b.txt") : NewStr("Resources/Text/input_2016_02_a.txt");
-		bool readSuccess = ReadEntireFile(false, inputFilePath, &state->input, mainHeap);
-		Assert(readSuccess);
 		state->cIndex = 0;
 		state->movedSinceLastCode = false;
-		if (debug) { PrintLine_D("Input is %llu chars", state->input.length); }
+		PrintLine_I("Input is %llu chars", inputFile.length);
 		
 		state->position = NewVec2i(1, 1);
 		CreateVarArray(&state->codeChars, mainHeap, sizeof(char));
@@ -41,11 +37,11 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
 	
 	if (!state->completed)
 	{
-		char nextChar = (state->cIndex < state->input.length ? state->input.chars[state->cIndex] : '\0');
+		char nextChar = (state->cIndex < inputFile.length ? inputFile.chars[state->cIndex] : '\0');
 		state->cIndex++;
 		
 		progressInfo->amountCompleted = state->cIndex;
-		progressInfo->amountExpected = state->input.length+1;
+		progressInfo->amountExpected = inputFile.length+1;
 		
 		if (nextChar == '\n' || nextChar == '\0')
 		{
@@ -54,7 +50,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
 				char* newCodeChar = VarArrayAdd(&state->codeChars, char);
 				NotNull(newCodeChar);
 				*newCodeChar = '1' + (state->position.x + 3*state->position.y);
-				if (debug) { PrintLine_D("Added %c to the code", *newCodeChar); }
+				PrintLine_D("Added %c to the code", *newCodeChar);
 			}
 			state->movedSinceLastCode = false;
 		}
@@ -62,31 +58,31 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
 		{
 			if (state->position.y > 0) { state->position.y--; }
 			state->movedSinceLastCode = true;
-			if (debug) { PrintLine_D("Stepped up to (%d, %d)", state->position.x, state->position.y); }
+			PrintLine_D("Stepped up to (%d, %d)", state->position.x, state->position.y);
 		}
 		else if (nextChar == 'D' || nextChar == 'd')
 		{
 			if (state->position.y < 2) { state->position.y++; }
 			state->movedSinceLastCode = true;
-			if (debug) { PrintLine_D("Stepped down to (%d, %d)", state->position.x, state->position.y); }
+			PrintLine_D("Stepped down to (%d, %d)", state->position.x, state->position.y);
 		}
 		else if (nextChar == 'L' || nextChar == 'l')
 		{
 			if (state->position.x > 0) { state->position.x--; }
 			state->movedSinceLastCode = true;
-			if (debug) { PrintLine_D("Stepped left to (%d, %d)", state->position.x, state->position.y); }
+			PrintLine_D("Stepped left to (%d, %d)", state->position.x, state->position.y);
 		}
 		else if (nextChar == 'R' || nextChar == 'r')
 		{
 			if (state->position.x < 2) { state->position.x++; }
 			state->movedSinceLastCode = true;
-			if (debug) { PrintLine_D("Stepped right to (%d, %d)", state->position.x, state->position.y); }
+			PrintLine_D("Stepped right to (%d, %d)", state->position.x, state->position.y);
 		}
 		
-		if (debug) { PrintLine_D("Processed %llu/%llu chars", state->cIndex, state->input.length); }
-		if (state->cIndex > state->input.length)
+		PrintLine_D("Processed %llu/%llu chars", state->cIndex, inputFile.length);
+		if (state->cIndex > inputFile.length)
 		{
-			if (debug) { WriteLine_I("The end!"); }
+			WriteLine_I("The end!");
 			state->completed = true;
 		}
 		
@@ -94,7 +90,6 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
 		{
 			MyStr_t resultStr = NewStr(state->codeChars.length, (char*)state->codeChars.items);
 			SetOptionalOutPntr(result, AllocString(resultArena, &resultStr));
-			FreeString(mainHeap, &state->input);
 			FreeVarArray(&state->codeChars);
 		}
 	}
@@ -105,7 +100,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02)
 // +==============================+
 // |   Calculate_Aoc2016_Day02x   |
 // +==============================+
-// bool Calculate_Aoc2016_Day02x(void* statePntr, bool debug, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
+// bool Calculate_Aoc2016_Day02x(void* statePntr, MyStr_t inputFile, bool debug, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
 CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 {
 	NotNull(statePntr);
@@ -113,12 +108,9 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 	
 	if (!state->initialized)
 	{
-		MyStr_t inputFilePath = BtnDownRaw(Btn_B) ? NewStr("Resources/Text/input_2016_02_b.txt") : NewStr("Resources/Text/input_2016_02_a.txt");
-		bool readSuccess = ReadEntireFile(false, inputFilePath, &state->input, mainHeap);
-		Assert(readSuccess);
 		state->cIndex = 0;
 		state->movedSinceLastCode = false;
-		if (debug) { PrintLine_D("Input is %llu chars", state->input.length); }
+		PrintLine_I("Input is %llu chars", inputFile.length);
 		
 		state->position = NewVec2i(0, 2);
 		CreateVarArray(&state->codeChars, mainHeap, sizeof(char));
@@ -128,11 +120,11 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 	
 	if (!state->completed)
 	{
-		char nextChar = (state->cIndex < state->input.length ? state->input.chars[state->cIndex] : '\0');
+		char nextChar = (state->cIndex < inputFile.length ? inputFile.chars[state->cIndex] : '\0');
 		state->cIndex++;
 		
 		progressInfo->amountCompleted = state->cIndex;
-		progressInfo->amountExpected = state->input.length+1;
+		progressInfo->amountExpected = inputFile.length+1;
 		
 		if (nextChar == '\n' || nextChar == '\0')
 		{
@@ -149,7 +141,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 				char* newCodeChar = VarArrayAdd(&state->codeChars, char);
 				NotNull(newCodeChar);
 				*newCodeChar = keyCharTable[(state->position.x + 5*state->position.y)];
-				if (debug) { PrintLine_D("Added %c to the code", *newCodeChar); }
+				PrintLine_D("Added %c to the code", *newCodeChar);
 			}
 			state->movedSinceLastCode = false;
 		}
@@ -158,7 +150,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 			if (state->position.y-1 >= 2 - state->position.x && state->position.y-1 >= -2 + state->position.x)
 			{
 				state->position.y--;
-				if (debug) { PrintLine_D("Stepped up to (%d, %d)", state->position.x, state->position.y); }
+				PrintLine_D("Stepped up to (%d, %d)", state->position.x, state->position.y);
 			}
 			state->movedSinceLastCode = true;
 		}
@@ -167,7 +159,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 			if (state->position.y+1 <= 2 + state->position.x && state->position.y+1 <= 6 - state->position.x)
 			{
 				state->position.y++;
-				if (debug) { PrintLine_D("Stepped down to (%d, %d)", state->position.x, state->position.y); }
+				PrintLine_D("Stepped down to (%d, %d)", state->position.x, state->position.y);
 			}
 			state->movedSinceLastCode = true;
 		}
@@ -176,7 +168,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 			if (state->position.x-1 >= 2 - state->position.y && state->position.x-1 >= -2 + state->position.y)
 			{
 				state->position.x--;
-				if (debug) { PrintLine_D("Stepped left sto (%d, %d)", state->position.x, state->position.y); }
+				PrintLine_D("Stepped left sto (%d, %d)", state->position.x, state->position.y);
 			}
 			state->movedSinceLastCode = true;
 		}
@@ -185,15 +177,15 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 			if (state->position.x+1 <= 2 + state->position.y && state->position.x+1 <= 6 - state->position.y)
 			{
 				state->position.x++;
-				if (debug) { PrintLine_D("Stepped right to (%d, %d)", state->position.x, state->position.y); }
+				PrintLine_D("Stepped right to (%d, %d)", state->position.x, state->position.y);
 			}
 			state->movedSinceLastCode = true;
 		}
 		
-		if (debug) { PrintLine_D("Processed %llu/%llu chars", state->cIndex, state->input.length); }
-		if (state->cIndex > state->input.length)
+		PrintLine_D("Processed %llu/%llu chars", state->cIndex, inputFile.length);
+		if (state->cIndex > inputFile.length)
 		{
-			if (debug) { WriteLine_I("The end!"); }
+			WriteLine_I("The end!");
 			state->completed = true;
 		}
 		
@@ -201,7 +193,6 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day02x)
 		{
 			MyStr_t resultStr = NewStr(state->codeChars.length, (char*)state->codeChars.items);
 			SetOptionalOutPntr(result, AllocString(resultArena, &resultStr));
-			FreeString(mainHeap, &state->input);
 			FreeVarArray(&state->codeChars);
 		}
 	}

@@ -36,6 +36,10 @@ void StartAppState_Calculator(bool initialize, AppState_t prevState, MyStr_t tra
 		ClearStruct(calc->progress);
 		calc->numItersPerCrankMove = 1;
 		calc->debugOutputOn = true;
+		pig->debugOutputDisabledLevels[DbgLevel_Debug] = !calc->debugOutputOn;
+		
+		calc->fileChosen = false;
+		calc->useTestFile = true;
 		
 		calc->initialized = true;
 		FreeScratchArena(scratch);
@@ -60,6 +64,7 @@ void StopAppState_Calculator(bool deinitialize, AppState_t nextState)
 			FreeMem(mainHeap, calc->dayState, calc->dayStateSize);
 		}
 		FreeString(mainHeap, &calc->answerStr);
+		FreeString(mainHeap, &calc->fileContents);
 		ClearPointer(calc);
 	}
 }
@@ -89,10 +94,37 @@ void UpdateAppState_Calculator()
 	}
 	
 	// +==============================+
+	// |  Handle Choosing Input File  |
+	// +==============================+
+	if (!calc->fileChosen)
+	{
+		if (BtnPressed(Btn_Left) || BtnPressed(Btn_Right))
+		{
+			if (BtnPressed(Btn_Left)) { HandleBtnExtended(Btn_Left); }
+			if (BtnPressed(Btn_Right)) { HandleBtnExtended(Btn_Right); }
+			calc->useTestFile = !calc->useTestFile;
+		}
+		
+		if (BtnPressed(Btn_A))
+		{
+			HandleBtnExtended(Btn_A);
+			MyStr_t inputFilePath = (calc->useTestFile ? gl->selectedDayInfo->testInputPath : gl->selectedDayInfo->realInputPath);
+			if (ReadEntireFile(false, inputFilePath, &calc->fileContents, mainHeap))
+			{
+				calc->fileChosen = true;
+			}
+			else
+			{
+				PrintLine_E("Failed to open input file at \"%.*s\"", StrPrint(inputFilePath));
+			}
+		}
+	}
+	
+	// +==============================+
 	// |   Handle Crank to Iterate    |
 	// +==============================+
 	u64 numItersToPerform = 0;
-	if (CrankMoved() && !calc->doneCalculating)
+	if (CrankMoved() && !calc->doneCalculating && calc->fileChosen)
 	{
 		HandleCrankDelta();
 		r32 crankDelta = (input->crankAngle - calc->prevCrankAngle);
@@ -107,7 +139,7 @@ void UpdateAppState_Calculator()
 	// +==================================+
 	// | Btn_Right Does Single Iterations |
 	// +==================================+
-	if (BtnPressed(Btn_Right))
+	if (BtnPressed(Btn_Right) && calc->fileChosen && !calc->doneCalculating)
 	{
 		HandleBtnExtended(Btn_Right);
 		numItersToPerform += 1;
@@ -116,25 +148,25 @@ void UpdateAppState_Calculator()
 	// +==============================+
 	// |    Calculate Iteratively     |
 	// +==============================+
-	if (numItersToPerform > 0)
+	if (calc->fileChosen)
 	{
 		for (u64 iIndex = 0; iIndex < numItersToPerform; iIndex++)
 		{
 			MyStr_t resultStr = MyStr_Empty;
-			if (gl->selectedDayInfo->calculateFunc(calc->dayState, calc->debugOutputOn, scratch, &resultStr, &calc->progress))
+			calc->numIterationsPerformed++;
+			if (gl->selectedDayInfo->calculateFunc(calc->dayState, calc->fileContents, calc->debugOutputOn, scratch, &resultStr, &calc->progress))
 			{
 				calc->answerStr = AllocString(mainHeap, &resultStr);
 				calc->doneCalculating = true;
 				break;
 			}
 		}
-		calc->numIterationsPerformed += numItersToPerform;
 	}
 	
 	// +==========================================+
 	// | Up/Down Changes Num Iters Per Crank Move |
 	// +==========================================+
-	if (BtnPressed(Btn_Up) || BtnPressed(Btn_Down))
+	if ((BtnPressed(Btn_Up) || BtnPressed(Btn_Down)) && calc->fileChosen)
 	{
 		if (BtnPressed(Btn_Up)) { HandleBtnExtended(Btn_Up); }
 		if (BtnPressed(Btn_Down)) { HandleBtnExtended(Btn_Down); }
@@ -163,29 +195,40 @@ void UpdateAppState_Calculator()
 		calc->numItersPerCrankMove = options[currentIndex];
 	}
 	
-	// +==============================+
-	// |         Btn_B Resets         |
-	// +==============================+
-	if (BtnPressed(Btn_B) && calc->doneCalculating)
+	// +==========================================+
+	// | Btn_B Resets or Returns to Day Selection |
+	// +==========================================+
+	if (BtnPressed(Btn_B))
 	{
 		HandleBtnExtended(Btn_B);
-		if (calc->dayState != nullptr)
+		if (calc->fileChosen || calc->doneCalculating)
 		{
-			MyMemSet(calc->dayState, 0x00, calc->dayStateSize);
+			if (calc->dayState != nullptr)
+			{
+				MyMemSet(calc->dayState, 0x00, calc->dayStateSize);
+			}
+			if (calc->doneCalculating) { FreeString(mainHeap, &calc->answerStr); }
+			FreeString(mainHeap, &calc->fileContents);
+			calc->doneCalculating = false;
+			calc->fileChosen = false;
+			calc->numIterationsPerformed = 0;
+			ClearStruct(calc->progress);
 		}
-		FreeString(mainHeap, &calc->answerStr);
-		calc->doneCalculating = false;
-		calc->numIterationsPerformed = 0;
+		else
+		{
+			PopAppState();
+		}
 	}
 	
 	// +===============================+
 	// | Btn_Left Toggles Debug Output |
 	// +===============================+
-	if (BtnPressed(Btn_Left))
+	if (BtnPressed(Btn_Left) && calc->fileChosen)
 	{
 		HandleBtnExtended(Btn_Left);
 		PrintLine_D("Debug output turned %s", calc->debugOutputOn ? "ON" : "OFF");
 		calc->debugOutputOn = !calc->debugOutputOn;
+		pig->debugOutputDisabledLevels[DbgLevel_Debug] = !calc->debugOutputOn;
 	}
 	
 	FreeScratchArena(scratch);
@@ -201,41 +244,73 @@ void RenderAppState_Calculator(bool isOnTop)
 	
 	pd->graphics->clear(kColorBlack);
 	PdSetDrawMode(kDrawModeCopy);
+	PdSetDrawMode(kDrawModeInverted);
 	
+	// +==============================+
+	// |      Render File Choice      |
+	// +==============================+
+	if (!calc->fileChosen)
+	{
+		PdBindFont(&gl->mainFont);
+		reci leftRec = NewReci(0, 0, ScreenSize.width/2, ScreenSize.height);
+		v2i leftCenter = NewVec2i(leftRec.x + leftRec.width/2, leftRec.y + leftRec.height/2 - boundFont->lineHeight/2);
+		reci rightRec = NewReci(ScreenSize.width/2, 0, ScreenSize.width/2, ScreenSize.height);
+		v2i rightCenter = NewVec2i(rightRec.x + rightRec.width/2, rightRec.y + rightRec.height/2 - boundFont->lineHeight/2);
+		
+		if (calc->useTestFile)
+		{
+			leftRec = ReciDeflate(leftRec, Vec2iFill(RoundR32i(Oscillate(0, 8, 1500))));
+		}
+		else
+		{
+			rightRec = ReciDeflate(rightRec, Vec2iFill(RoundR32i(Oscillate(0, 8, 1500))));
+		}
+		
+		PdDrawRecOutline(leftRec, 10, false, kColorBlack);
+		PdDrawRecOutline(leftRec, 5, false, kColorWhite);
+		PdDrawText("Test", leftCenter, TextAlign_Center);
+		if (calc->useTestFile)
+		{
+			LCDBitmapDrawMode oldDrawMode = PdSetDrawMode(kDrawModeNXOR);
+			PdDrawRec(leftRec, kColorBlack);
+			PdSetDrawMode(oldDrawMode);
+		}
+		
+		PdDrawRecOutline(rightRec, 10, false, kColorBlack);
+		PdDrawRecOutline(rightRec, 5, false, kColorWhite);
+		PdDrawText("Real", rightCenter, TextAlign_Center);
+		if (!calc->useTestFile)
+		{
+			LCDBitmapDrawMode oldDrawMode = PdSetDrawMode(kDrawModeNXOR);
+			PdDrawRec(rightRec, kColorBlack);
+			PdSetDrawMode(oldDrawMode);
+		}
+	}
 	// +==============================+
 	// |    Render Basic Info Text    |
 	// +==============================+
-	PdSetDrawMode(kDrawModeInverted);
-	PdBindFont(&gl->mainFont);
-	if (calc->numIterationsPerformed == 0)
-	{
-		MyStr_t displayStr = NewStr("Crank to calculate...");
-		v2i displayStrSize = MeasureText(gl->mainFont.font, displayStr);
-		v2i displayStrPos = NewVec2i(ScreenSize.width/2 - displayStrSize.width/2, ScreenSize.height/2 - displayStrSize.height/2);
-		PdDrawText(displayStr, displayStrPos);
-	}
-	else if (!calc->doneCalculating)
-	{
-		r32 completionAmount = (r32)calc->progress.amountCompleted / (r32)calc->progress.amountExpected;
-		MyStr_t displayStr = PrintInArenaStr(scratch, "Calculating %llu %.02f%%...", calc->numIterationsPerformed, completionAmount * 100.0f);
-		v2i displayStrSize = MeasureText(gl->mainFont.font, displayStr);
-		v2i displayStrPos = NewVec2i(ScreenSize.width/2 - displayStrSize.width/2, ScreenSize.height/2 - displayStrSize.height/2);
-		PdDrawText(displayStr, displayStrPos);
-		PdDrawTextPrint(NewVec2i(5, ScreenSize.height - 5 - gl->mainFont.lineHeight), "Iters: %llu", calc->numItersPerCrankMove);
-		MyStr_t debugOutputStr = PrintInArenaStr(scratch, "Debug: %s", calc->debugOutputOn ? "ON" : "OFF");
-		v2i debugOutputSize = MeasureText(gl->mainFont.font, debugOutputStr);
-		v2i debugOutputPos = NewVec2i(ScreenSize.width - 5 - debugOutputSize.width, ScreenSize.height - 5 - debugOutputSize.height);
-		PdDrawText(debugOutputStr, debugOutputPos);
-	}
 	else
 	{
-		MyStr_t displayStr = PrintInArenaStr(scratch, "Answer: %.*s", StrPrint(calc->answerStr));
-		v2i displayStrSize = MeasureText(gl->mainFont.font, displayStr);
-		v2i displayStrPos = NewVec2i(ScreenSize.width/2 - displayStrSize.width/2, ScreenSize.height/2 - displayStrSize.height/2);
-		PdDrawText(displayStr, displayStrPos);
+		PdBindFont(&gl->mainFont);
+		v2i screenCenter = NewVec2i(ScreenSize.width/2, ScreenSize.height/2);
+		v2i bottomRight = NewVec2i(ScreenSize.width - 5, ScreenSize.height - 5 - boundFont->lineHeight);
+		if (!calc->doneCalculating)
+		{
+			r32 completionAmount = 0.0f;
+			if (calc->progress.amountExpected > 0)
+			{
+				completionAmount = (r32)calc->progress.amountCompleted / (r32)calc->progress.amountExpected;
+			}
+			PdDrawTextPrintEx(screenCenter, TextAlign_Center, "Calculating %llu %.02f%%...", calc->numIterationsPerformed, (double)(completionAmount * 100.0f));
+			PdDrawTextPrint(NewVec2i(5, ScreenSize.height - 5 - gl->mainFont.lineHeight), "Iters: %llu", calc->numItersPerCrankMove);
+			PdDrawTextPrintEx(bottomRight, TextAlign_Right, "Debug: %s", calc->debugOutputOn ? "ON" : "OFF");
+		}
+		else
+		{
+			PdDrawTextPrintEx(screenCenter, TextAlign_Center, "Answer: %.*s", StrPrint(calc->answerStr));
+			PdDrawTextPrintEx(bottomRight, TextAlign_Right, "Iterations: %llu", calc->numIterationsPerformed);
+		}
 	}
-	
-	PdSetDrawMode(kDrawModeCopy);
 	
 	// +==============================+
 	// |         Debug Render         |

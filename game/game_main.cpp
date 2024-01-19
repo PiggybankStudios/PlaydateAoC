@@ -45,20 +45,22 @@ AppState_t InitGame()
 	pd->display->setRefreshRate((r32)REFRESH_RATE);
 	
 	u64 numRegisteredDays = 0;
-	#define REGISTER_AOC_DAY(year, day, stateStructType, calculateFunction, inputPath1, inputPath2) numRegisteredDays++;
+	#define REGISTER_AOC_DAY(year, day, stateStructType, calculateFunction, testPath, realPath) numRegisteredDays++;
 	#include "day_registration.h"
 	
 	CreateVarArray(&gl->dayInfos, fixedHeap, sizeof(DayInfo_t), numRegisteredDays);
 	
-	#define REGISTER_AOC_DAY(yearValue, dayValue, stateStructType, calculateFunction, inputPath1, inputPath2) do \
-	{                                                                                                            \
-		DayInfo_t* newDayInfo = VarArrayAdd(&gl->dayInfos, DayInfo_t);                                           \
-		NotNull(newDayInfo);                                                                                     \
-		ClearPointer(newDayInfo);                                                                                \
-		newDayInfo->year = (yearValue);                                                                          \
-		newDayInfo->day = (dayValue);                                                                            \
-		newDayInfo->stateSize = sizeof(stateStructType);                                                         \
-		newDayInfo->calculateFunc = (calculateFunction);                                                         \
+	#define REGISTER_AOC_DAY(yearValue, dayValue, stateStructType, calculateFunction, testPath, realPath) do \
+	{                                                                                                        \
+		DayInfo_t* newDayInfo = VarArrayAdd(&gl->dayInfos, DayInfo_t);                                       \
+		NotNull(newDayInfo);                                                                                 \
+		ClearPointer(newDayInfo);                                                                            \
+		newDayInfo->year = (yearValue);                                                                      \
+		newDayInfo->day = (dayValue);                                                                        \
+		newDayInfo->stateSize = sizeof(stateStructType);                                                     \
+		newDayInfo->calculateFunc = (calculateFunction);                                                     \
+		newDayInfo->testInputPath = NewStr(testPath);                                                        \
+		newDayInfo->realInputPath = NewStr(realPath);                                                        \
 	} while(0)
 	#include "day_registration.h"
 	

@@ -16,7 +16,7 @@ struct ProgressInfo_t
 	u64 amountExpected;
 };
 
-#define CALCULATE_DAY_FUNC_DEFINITION(functionName) bool functionName(void* statePntr, bool debug, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
+#define CALCULATE_DAY_FUNC_DEFINITION(functionName) bool functionName(void* statePntr, MyStr_t inputFile, bool debug, MemArena_t* resultArena, MyStr_t* result, ProgressInfo_t* progressInfo)
 typedef CALCULATE_DAY_FUNC_DEFINITION(CalculateDayFunc_f);
 
 struct DayInfo_t
@@ -25,6 +25,8 @@ struct DayInfo_t
 	u8 day;
 	u64 stateSize;
 	CalculateDayFunc_f* calculateFunc;
+	MyStr_t testInputPath;
+	MyStr_t realInputPath;
 };
 
 struct GameGlobals_t
