@@ -61,8 +61,7 @@ void LayoutAppState_DaySelector()
 		dsel->buttonsListRec.width = MaxI32(dsel->buttonsListRec.width, btn->mainRec.width);
 		btn->mainRec.x = 0;
 		btn->mainRec.y = dsel->buttonsListRec.height;
-		if (bIndex > 0) { dsel->buttonsListRec.height += DSEL_BTN_PADDING; }
-		dsel->buttonsListRec.height += btn->mainRec.width;
+		dsel->buttonsListRec.height += btn->mainRec.height + DSEL_BTN_PADDING;
 	}
 	
 	dsel->buttonsListRec.x = ScreenSize.width/2 - dsel->buttonsListRec.width/2;
