@@ -157,6 +157,7 @@ CALCULATE_DAY_FUNC_DEFINITION(Calculate_Aoc2016_Day08A)
 			}
 			resultStr.chars[resultStr.length] = '\0';
 			*result = PrintInArenaStr(resultArena, "\n\n%.*s", StrPrint(resultStr));
+			// PrintLine_D("Code: %.*s", StrPrint(resultStr));
 			#endif
 			
 			FreeMem(mainHeap, state->pixels, state->numPixels * sizeof(bool));
