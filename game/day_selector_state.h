@@ -7,7 +7,7 @@ Date:   01\18\2024
 #ifndef _DAY_SELECTOR_STATE_H
 #define _DAY_SELECTOR_STATE_H
 
-#define DSEL_BTN_SIZE                       NewVec2i(240, 80) //px
+#define DSEL_BTN_SIZE                       NewVec2i(150, 35) //px
 #define DSEL_BTN_PADDING                    5 //px
 #define DSEL_BTN_OUTLINE_THICKNESS          4 //px
 #define DSEL_BTN_OUTLINE_SELECTED_THICKNESS 10 //px
